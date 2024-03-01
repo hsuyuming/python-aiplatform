@@ -45,6 +45,7 @@ from google.cloud.aiplatform_v1beta1.types import tool as gapic_tool_types
 from vertexai.language_models import (
     _language_models as tunable_models,
 )
+from google.auth import credentials as ga_credentials  # type: ignore
 import warnings
 
 try:
@@ -136,6 +137,9 @@ class _GenerativeModel:
         generation_config: Optional[GenerationConfigType] = None,
         safety_settings: Optional[SafetySettingsType] = None,
         tools: Optional[List["Tool"]] = None,
+        project: str = None,
+        location: str = None,
+        credentials: ga_credentials.Credentials = None,
     ):
         r"""Initializes GenerativeModel.
 
@@ -156,9 +160,12 @@ class _GenerativeModel:
         if model_name.startswith("models/"):
             model_name = "publishers/google/" + model_name
 
-        project = aiplatform_initializer.global_config.project
-        location = aiplatform_initializer.global_config.location
+        project = project if project else aiplatform_initializer.global_config.project
+        location = (
+            location if location else aiplatform_initializer.global_config.location
+        )
 
+        self._credentials = credentials
         self._model_name = model_name
         self._prediction_resource_name = (
             f"projects/{project}/locations/{location}/{model_name}"
@@ -183,6 +190,7 @@ class _GenerativeModel:
                 aiplatform_initializer.global_config.create_client(
                     client_class=prediction_service.PredictionServiceClient,
                     prediction_client=True,
+                    credentials=self._credentials,
                 )
             )
         return self._prediction_client_value
@@ -1215,17 +1223,15 @@ class Tool:
     @classmethod
     def from_retrieval(
         cls,
-        retrieval: "Retrieval",
+        retrieval: gapic_tool_types.Retrieval,
     ):
-        raw_tool = gapic_tool_types.Tool(
-            retrieval=retrieval._raw_retrieval
-        )
+        raw_tool = gapic_tool_types.Tool(retrieval=retrieval._raw_retrieval)
         return cls._from_gapic(raw_tool=raw_tool)
 
     @classmethod
     def from_google_search_retrieval(
         cls,
-        google_search_retrieval: "GoogleSearchRetrieval",
+        google_search_retrieval: gapic_tool_types.GoogleSearchRetrieval,
     ):
         raw_tool = gapic_tool_types.Tool(
             google_search_retrieval=google_search_retrieval._raw_google_search_retrieval
